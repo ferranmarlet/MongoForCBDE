@@ -2,7 +2,10 @@ package mon;
 
 import java.util.Date;
 
+import org.bson.Document;
+
 import com.mongodb.MongoClient;
+import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.MongoIterable;
 
@@ -26,6 +29,14 @@ public class MongoCBDE {
 	}
 	
 	public void inserts(){
+		MongoCollection<Document> c = db.getCollection("Region");
+		Document doc = new Document("Region","Europa");
+		doc.append("RegionKey", "1");
+		doc.append("RegionName", "Europa");
+		doc.append("Comment", "ok");
+		
+		c.insertOne(doc);
+		//c.insertOne("Europa");
 		
 	}
 	
