@@ -367,7 +367,7 @@ public class MongoCBDE {
 		ORDER BY revenue desc;
 		*/
 		MongoCollection<Document> collection = db.getCollection("Region");	
-		FindIterable<Document> iterable = collection.find(new Document("RegionName", "Europa"));
+		FindIterable<Document> iterable = collection.find(new Document("RegionName", region));
 		iterable.forEach(new Block<Document>(){
 
 			public void apply(Document arg0) {
