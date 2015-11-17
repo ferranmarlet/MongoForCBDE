@@ -3,6 +3,7 @@ package mon;
 import static java.util.Arrays.asList;
 
 import java.util.Date;
+import java.util.List;
 
 import org.bson.Document;
 
@@ -276,7 +277,7 @@ public class MongoCBDE {
 				)
 			); 
 		
-		
+		db.getCollection("Region").drop();
 		db.getCollection("Region").insertOne(nouDoc	);
 		/*	
 			FindIterable<Document> iterable = db.getCollection("Region").find();
@@ -314,13 +315,38 @@ public class MongoCBDE {
 		GROUP BY l_orderkey, o_orderdate, o_shippriority
 		ORDER BY revenue desc, o_orderdate;
 		*/
-		MongoCollection<Document> collection = db.getCollection("Regions");		
-		FindIterable<Document> iterable = collection.find(new Document("Regions.Nation.Customer.MarketSegment", segment).append("Regions.Nation.Customer.Orders.OrderDate", new Document("$lt", d1)).append("Regions.Nation.Customer.Orders.LineItems", new Document("$lt", d2)));
+		final Query3Result qres = new Query3Result();
+		MongoCollection<Document> collection = db.getCollection("Region");	
+		//System.out.println("col count: "+collection.count());
+		FindIterable<Document> iterable = collection.find(new Document("RegionName", "Europa"));
+		//FindIterable<Document> iterable = collection.find(new Document("Regions.Nation.Customer.MarketSegment", segment).append("Regions.Nation.Customer.Orders.OrderDate", new Document("$lt", d1)).append("Regions.Nation.Customer.Orders.LineItems", new Document("$lt", d2)));
 		iterable.forEach(new Block<Document>(){
 
 			public void apply(Document arg0) {
 				//Document orders = (Document)arg0.get("Orders");
-				System.out.println(arg0.toJson());
+				List<Document> nacions = (List<Document>)arg0.get("Nations");
+				for(Document nac : nacions){
+					List<Document> customers = (List<Document>)nac.get("Customers");
+					for(Document cust : customers){
+						List<Document>orders = (List<Document>)cust.get("Orders");
+						for(Document ord : orders){
+							Double revenue = 0.;
+							String orderKey = ord.getString("OrderKey");
+							String orderDate = ord.getString("OrderDate");
+							String orderShip = ord.getString("ShipPriority");
+							List<Document>lineItems = (List<Document>)ord.get("LineItems");
+							for(Document li : lineItems){
+								revenue += li.getInteger("ExtendedPrice")*1-li.getDouble("Discount");
+							}
+							qres.push(revenue, orderKey, orderDate, orderShip);
+						}
+					}
+				}
+				qres.sort();
+				System.out.println(qres.list);
+				
+				//System.out.println(arg0.get("Nations").toString());
+				//System.out.println(arg0.toJson());
 			}
 			
 			
