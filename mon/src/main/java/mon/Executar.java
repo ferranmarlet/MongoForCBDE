@@ -18,6 +18,9 @@ public class Executar {
 			System.out.println("Resultats query 3");
 			System.out.println("-----------------------");
 			mongo.query3("Jocs", d1, d2);
+			System.out.println();
+			System.out.println();
+			System.out.println();
 			cal.set(2014, 12, 28);
 			Date d3 = cal.getTime();
 			System.out.println("Resultats query 4");

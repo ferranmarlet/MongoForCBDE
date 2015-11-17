@@ -4,6 +4,7 @@ import static java.util.Arrays.asList;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -326,7 +327,6 @@ public class MongoCBDE {
 				List<Document> nacions = (List<Document>)arg0.get("Nations");
 				for(Document nac : nacions){
 					List<Document> customers = (List<Document>)nac.get("Customers");
-					
 					for(Document cust : customers){
 						if(cust.get("MarketSegment").toString().equals(segment)){
 							List<Document>orders = (List<Document>)cust.get("Orders");
@@ -340,6 +340,7 @@ public class MongoCBDE {
 										e.printStackTrace();
 									}
 									if(orderDate.compareTo(d1)<0){
+										Boolean found = false;
 										Double revenue = 0.;
 										String orderKey = ord.get("OrderKey").toString();
 										//String orderDate = ord.get("OrderDate").toString();
@@ -355,11 +356,12 @@ public class MongoCBDE {
 													e.printStackTrace();
 												}
 												if(orderDate2.compareTo(d2)>0){
-													revenue += Integer.parseInt(li.get("ExtendedPrice").toString());//*1-li.getDouble("Discount");
+													found = true;
+													revenue += Integer.parseInt(li.get("ExtendedPrice").toString())*1-Double.parseDouble(li.get("Discount").toString());
 												}
 											}
 										}
-										qres.push(revenue, orderKey, orderDate.toString(), orderShip);
+										if(found) qres.push(revenue, orderKey, orderDate.toString(), orderShip);
 									}
 								}
 							}
@@ -376,7 +378,7 @@ public class MongoCBDE {
 		return result;
 	}
 	
-	public String query4(Date d, String region){
+	public String query4(final Date d, String region){
 		/*SELECT n_name, sum(l_extendedprice * (1 - l_discount)) as revenue
 		FROM customer, orders, lineitem, supplier, nation, region
 		WHERE c_custkey = o_custkey AND l_orderkey = o_orderkey AND l_suppkey =
@@ -386,6 +388,10 @@ public class MongoCBDE {
 		GROUP BY n_name
 		ORDER BY revenue desc;
 		*/
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(d);
+		cal.add(Calendar.YEAR,1);
+		final Date da = cal.getTime();
 		MongoCollection<Document> collection = db.getCollection("Region");	
 		FindIterable<Document> iterable = collection.find(new Document("RegionName", region));
 		iterable.forEach(new Block<Document>(){
@@ -393,6 +399,7 @@ public class MongoCBDE {
 			public void apply(Document arg0) {
 				List<Document> nacions = (List<Document>)arg0.get("Nations");
 				for(Document nac : nacions){
+					Boolean found = false;
 					List<Document> customers = (List<Document>)nac.get("Customers");
 					Double revenue = 0.;
 					String n_name = nac.get("Name").toString();
@@ -400,16 +407,26 @@ public class MongoCBDE {
 						List<Document>orders = (List<Document>)cust.get("Orders");
 						if(orders!=null){
 							for(Document ord : orders){
-								List<Document>lineItems = (List<Document>)ord.get("LineItems");
-								if(lineItems!=null){
-									for(Document li : lineItems){
-										revenue += Integer.parseInt(li.get("ExtendedPrice").toString());//*1-li.getDouble("Discount");
+								Date orderDate = new Date();
+								try {
+									orderDate = new SimpleDateFormat("yyyy-MM-dd").parse(ord.get("OrderDate").toString());
+								} catch (ParseException e) {
+									// TODO Auto-generated catch block
+									e.printStackTrace();
+								}
+								if(orderDate.compareTo(d)>0 && orderDate.compareTo(da)<0){
+									found = true;
+									List<Document>lineItems = (List<Document>)ord.get("LineItems");
+									if(lineItems!=null){
+										for(Document li : lineItems){
+											revenue += Integer.parseInt(li.get("ExtendedPrice").toString());//*1-li.getDouble("Discount");
+										}
 									}
 								}
 							}
 						}
 					}
-					qres.push(revenue, n_name);
+					if(found) qres.push(revenue, n_name);
 				}
 				qres.sort();
 				System.out.println(qres.list);
