@@ -6,7 +6,9 @@ import java.util.Comparator;
 
 public class Query3Result {
 	public ArrayList<Query3Container> list;
-	
+	public Query3Result(){
+		list = new ArrayList<Query3Container>();
+	}
 	public void push(Double d, String orderKey, String orderDate, String orderShip){
 		Query3Container q3 = new Query3Container();
 		q3.orderDate = orderDate;

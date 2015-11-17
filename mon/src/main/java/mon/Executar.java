@@ -11,6 +11,7 @@ public class Executar {
 			System.out.println(":)");
 			Calendar cal = Calendar.getInstance();
 			cal.set(2015, 12, 28);
+			System.out.println(cal.getTime().toString());
 			Date d1 = cal.getTime();
 			cal.set(2013, 12, 28);
 			Date d2 = cal.getTime();

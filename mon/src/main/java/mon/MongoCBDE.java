@@ -317,45 +317,65 @@ public class MongoCBDE {
 		*/
 		final Query3Result qres = new Query3Result();
 		MongoCollection<Document> collection = db.getCollection("Region");	
-		//System.out.println("col count: "+collection.count());
 		FindIterable<Document> iterable = collection.find(new Document("RegionName", "Europa"));
-		//FindIterable<Document> iterable = collection.find(new Document("Regions.Nation.Customer.MarketSegment", segment).append("Regions.Nation.Customer.Orders.OrderDate", new Document("$lt", d1)).append("Regions.Nation.Customer.Orders.LineItems", new Document("$lt", d2)));
 		iterable.forEach(new Block<Document>(){
 
 			public void apply(Document arg0) {
-				//Document orders = (Document)arg0.get("Orders");
 				List<Document> nacions = (List<Document>)arg0.get("Nations");
 				for(Document nac : nacions){
 					List<Document> customers = (List<Document>)nac.get("Customers");
+					
 					for(Document cust : customers){
 						List<Document>orders = (List<Document>)cust.get("Orders");
-						for(Document ord : orders){
-							Double revenue = 0.;
-							String orderKey = ord.getString("OrderKey");
-							String orderDate = ord.getString("OrderDate");
-							String orderShip = ord.getString("ShipPriority");
-							List<Document>lineItems = (List<Document>)ord.get("LineItems");
-							for(Document li : lineItems){
-								revenue += li.getInteger("ExtendedPrice")*1-li.getDouble("Discount");
+						
+						if(orders!=null){
+							for(Document ord : orders){
+								Double revenue = 0.;
+								
+								String orderKey = ord.get("OrderKey").toString();
+								String orderDate = ord.get("OrderDate").toString();
+								String orderShip = ord.get("ShipPriority").toString();
+								List<Document>lineItems = (List<Document>)ord.get("LineItems");
+								if(lineItems!=null){
+									for(Document li : lineItems){
+										revenue += Integer.parseInt(li.get("ExtendedPrice").toString());//*1-li.getDouble("Discount");
+									}
+								}
+								qres.push(revenue, orderKey, orderDate, orderShip);
 							}
-							qres.push(revenue, orderKey, orderDate, orderShip);
 						}
 					}
 				}
 				qres.sort();
 				System.out.println(qres.list);
-				
-				//System.out.println(arg0.get("Nations").toString());
-				//System.out.println(arg0.toJson());
 			}
 			
 			
 		});
-		String result = "";
+		String result = qres.list.toString();
 		return result;
 	}
 	
 	public String query4(Date d, String region){
+		/*SELECT n_name, sum(l_extendedprice * (1 - l_discount)) as revenue
+		FROM customer, orders, lineitem, supplier, nation, region
+		WHERE c_custkey = o_custkey AND l_orderkey = o_orderkey AND l_suppkey =
+		s_suppkey AND c_nationkey = s_nationkey AND s_nationkey = n_nationkey AND
+		n_regionkey = r_regionkey AND r_name = '[REGION]' AND o_orderdate >= date
+		'[DATE]' AND o_orderdate < date '[DATE]' + interval '1' year
+		GROUP BY n_name
+		ORDER BY revenue desc;
+		*/
+		MongoCollection<Document> collection = db.getCollection("Region");	
+		FindIterable<Document> iterable = collection.find(new Document("RegionName", "Europa"));
+		iterable.forEach(new Block<Document>(){
+
+			public void apply(Document arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+		});
 		String result = "";
 		return result;
 	}
