@@ -2,15 +2,24 @@ package mon;
 
 import static java.util.Arrays.asList;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 import org.bson.Document;
 
+import com.mongodb.AggregationOutput;
+import com.mongodb.BasicDBObject;
 import com.mongodb.Block;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 import com.mongodb.MongoClient;
+import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.MongoIterable;
 
@@ -26,11 +35,11 @@ public class MongoCBDE {
 		for(String nom : ColNoms){
 			if(nom.equals("Region")) iniciat = true;
 		}
-		if(!iniciat){
+		//if(!iniciat){
 			System.out.println("fem inserts");
-			db.createCollection("Region");
+			//db.createCollection("LineItems");
 			inserts();
-		}
+		//}
 	}
 	
 	/*
@@ -186,14 +195,14 @@ public class MongoCBDE {
 									new Document("SupplyCost", "30")
 									.append("Part", new Document("PartKey","P1")
 											.append("Mfgr", "wat")
-											.append("size", "21")
-											.append("type", "joquese"))
+											.append("size", 21)
+											.append("type", "tipusabc"))
 									,
 									new Document("SupplyCost", "33")
 									.append("Part", new Document("PartKey","P2")
 											.append("Mfgr", "wats")
-											.append("size", "15")
-											.append("type", "joquese2"))
+											.append("size", 15)
+											.append("type", "tipusabc"))
 									)
 									
 									),
@@ -279,6 +288,84 @@ public class MongoCBDE {
 		
 		db.getCollection("Region").drop();
 		db.getCollection("Region").insertOne(nouDoc	);
+		
+		db.getCollection("LineItems").drop();
+		Document lineItem = new Document()				
+				.append("OrderKey",3)
+				.append("PartKey", 1)
+				.append("SupKey",1)
+				.append("ReturnFlag", "F")
+				.append("LineStatus", "OK")
+				.append("Quantity", 102)
+				.append("ExtendedPrice", 35)
+				.append("Discount", 0)
+				.append("Tax", 24)
+				.append("ShipDate", "2015-11-13");
+		db.getCollection("LineItems").insertOne(lineItem );
+		
+		Document lineItem2 = new Document()				
+				.append("OrderKey",1)
+				.append("PartKey", 1)
+				.append("SupKey",1)
+				.append("ReturnFlag", "F")
+				.append("LineStatus", "OK")
+				.append("Quantity", 20)
+				.append("ExtendedPrice", 30)
+				.append("Discount", 50)
+				.append("Tax", 24)
+				.append("ShipDate", "2015-10-13");
+		db.getCollection("LineItems").insertOne(lineItem2);
+		
+		Document lineItem3 = new Document()
+				.append("OrderKey",1)
+				.append("PartKey", 1)
+				.append("SupKey",1)
+				.append("ReturnFlag", "F")
+				.append("LineStatus", "OK")
+				.append("Quantity", 2)
+				.append("ExtendedPrice", 23)
+				.append("Discount", 10)
+				.append("Tax", 4)
+				.append("ShipDate", "2015-09-13");
+		db.getCollection("LineItems").insertOne(lineItem3);
+		lineItem = new Document()				
+				.append("OrderKey",2)
+				.append("PartKey", 1)
+				.append("SupKey",1)
+				.append("ReturnFlag", "T")
+				.append("LineStatus", "X")
+				.append("Quantity", 102)
+				.append("ExtendedPrice", 35)
+				.append("Discount", 0)
+				.append("Tax", 5)
+				.append("ShipDate", "2015-12-13");
+		db.getCollection("LineItems").insertOne(lineItem );
+		
+		lineItem2 = new Document()				
+				.append("OrderKey",2)
+				.append("PartKey", 1)
+				.append("SupKey",1)
+				.append("ReturnFlag", "T")
+				.append("LineStatus", "X")
+				.append("Quantity", 25)
+				.append("ExtendedPrice", 50)
+				.append("Discount", 55)
+				.append("Tax", 24)
+				.append("ShipDate", "2015-10-10");
+		db.getCollection("LineItems").insertOne(lineItem2);
+		
+		lineItem3 = new Document()
+				.append("OrderKey",2)
+				.append("PartKey", 1)
+				.append("SupKey",1)
+				.append("ReturnFlag", "T")
+				.append("LineStatus", "X")
+				.append("Quantity", 52)
+				.append("ExtendedPrice", 23)
+				.append("Discount", 15)
+				.append("Tax", 5)
+				.append("ShipDate", "2015-09-11");
+		db.getCollection("LineItems").insertOne(lineItem3);
 		/*	
 			FindIterable<Document> iterable = db.getCollection("Region").find();
 			iterable.forEach(new Block<Document>() {
@@ -288,7 +375,7 @@ public class MongoCBDE {
 			    }
 			});		*/
 		
-		System.out.println(nouDoc.toJson());
+		//System.out.println(nouDoc.toJson());
 		
 	}
 	
@@ -296,13 +383,121 @@ public class MongoCBDE {
 		//potser no fa falta si getDatabase ja la crea
 	}
 	
-	public String query1(Date d){
+	public String query1(String d){
+		/*SELECT l_returnflag, l_linestatus, sum(l_quantity) as sum_qty,
+		sum(l_extendedprice) as sum_base_price, sum(l_extendedprice*(1-l_discount)) as
+		sum_disc_price, sum(l_extendedprice*(1-l_discount)*(1+l_tax)) as sum_charge,
+		avg(l_quantity) as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount)
+		as avg_disc, count(*) as count_order
+		FROM lineitem
+		WHERE l_shipdate <= '[date]'
+		GROUP BY l_returnflag, l_linestatus
+		ORDER BY l_returnflag, l_linestatus;*/
+		
+		MongoCollection<Document> collection = db.getCollection("LineItems");
+		
+		// We print all the LineItems for debug reasons
+		FindIterable<Document> iterablec = collection.find();		
+		iterablec.forEach(new Block<Document>(){
+			public void apply(Document arg0) {
+				System.out.println(arg0.toJson());
+			}
+		});
+		System.out.println("----------");
+		
+		// We declare the Aggregation Framework pipeline
+		ArrayList<BasicDBObject> pipeline = new
+				ArrayList<BasicDBObject>();
+		
+		// WHERE
+		BasicDBObject lteParam = new BasicDBObject("$lte",d);
+        BasicDBObject whereParam = new BasicDBObject("ShipDate", lteParam);
+        pipeline.add(new BasicDBObject("$match", whereParam));
+        
+        // GROUP BY and AGGREGATE
+        BasicDBObject id = new BasicDBObject("ReturnFlag","$ReturnFlag").append("LineStatus","$LineStatus");
+		BasicDBObject group = new BasicDBObject();
+		group.put("_id", id);
+		group.put("sum_qty",new BasicDBObject("$sum","$Quantity"));
+		group.put("sum_base_price",new BasicDBObject("$sum","$ExtendedPrice"));
+		group.put("avg_price",new BasicDBObject("$avg","$ExtendedPrice"));
+		group.put("avg_disc",new BasicDBObject("$avg","$Discount"));		
+		// This field is impossible to calculate in java...
+		//group.put("sum_disc_price",new BasicDBObject("$sum",new BasicDBObject("$multiply","1").append("$subtract", new BasicDBObject("$Discount","1")).append("$add", new BasicDBObject("$Tax","1").append("$ExtendedPrice","$ExtendedPrice" ))));
+		pipeline.add(new BasicDBObject("$group", group));
+		
+		// ORDER BY
+		BasicDBObject orderBy = new BasicDBObject("ReturnFlag",1).append("LineStatus",1);
+		pipeline.add(new BasicDBObject("$sort", orderBy));
+		
+		AggregateIterable<Document> aggregationResult = collection.aggregate(pipeline);
+		MongoCursor<Document> iterable = aggregationResult.iterator();
+		
+		// Printing and returning the result
 		String result = "";
+		while(iterable.hasNext()){
+			result += iterable.next().toJson();
+		}
+		System.out.println(result);		
 		return result;
 	}
 	
 	public String query2(Integer size, String type, String region){
+		/*SELECT s_acctbal, s_name, n_name, p_partkey, p_mfgr, s_address, s_phone,s_comment
+		FROM part, supplier, partsupp, nation, region
+		WHERE p_partkey = ps_partkey AND s_suppkey = ps_suppkey AND p_size = [SIZE]
+		AND p_type like '%[TYPE]' AND s_nationkey = n_nationkey AND n_regionkey =
+		r_regionkey AND r_name = '[REGION]' AND ps_supplycost = (SELECT
+		min(ps_supplycost) FROM partsupp, supplier, nation, region WHERE p_partkey =
+		ps_partkey AND s_suppkey = ps_suppkey AND s_nationkey = n_nationkey AND
+		n_regionkey = r_regionkey AND r_name = '[REGION]')
+		ORDER BY s_acctbal desc, n_name, s_name, p_partkey;*/
+		MongoCollection<Document> collection = db.getCollection("Region");
+		
+		// We print all the LineItems for debug reasons
+		FindIterable<Document> iterablec = collection.find();		
+		iterablec.forEach(new Block<Document>(){
+			public void apply(Document arg0) {
+				System.out.println(arg0.toJson());
+			}
+		});
+		System.out.println("----------");
+		
+		// We declare the Aggregation Framework pipeline
+		ArrayList<BasicDBObject> pipeline = new
+				ArrayList<BasicDBObject>();
+		        
+		// WHERE
+        BasicDBObject whereParam = new BasicDBObject("RegionName", region);
+        whereParam.put("Nations.Suppliers.PartSupps.Part.size", size);
+        whereParam.put("Nations.Suppliers.PartSupps.Part.type", type);
+        pipeline.add(new BasicDBObject("$match", whereParam));
+        
+        // SELECT
+ 		BasicDBObject projectParam = new BasicDBObject("Nations.Suppliers.PartSupps.Part.size", 1);
+ 		projectParam.put("Nations.Suppliers.Name", 1);
+ 		projectParam.put("Nations.Suppliers.Acctbal", 1);
+ 		projectParam.put("Nations.Suppliers.Phone", 1);
+ 		projectParam.put("Nations.Suppliers.Comment", 1);
+ 		projectParam.put("Nations.Suppliers.PartSupps.Part.Mfgr", 1);
+        pipeline.add(new BasicDBObject("$match", projectParam));
+        
+        
+        // ORDER BY
+ 		BasicDBObject orderBy = new BasicDBObject("Nations.Suppliers.Acctbal",-1).append("Nations.Name",1).append("Nations.Suppliers.Name",1).append("Nations.Suppliers.PartSupps.Part.Name",1);
+ 		pipeline.add(new BasicDBObject("$sort", orderBy));
+        
+        
+		
+        AggregateIterable<Document> aggregationResult = collection.aggregate(pipeline);
+		MongoCursor<Document> iterable = aggregationResult.iterator();
+		
+		// Printing and returning the result
 		String result = "";
+		while(iterable.hasNext()){
+			result += iterable.next().toJson();
+		}
+		System.out.println(result);		
 		return result;
 	}
 	

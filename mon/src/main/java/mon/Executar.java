@@ -10,7 +10,7 @@ public class Executar {
 			mongo.inserts();
 			//System.out.println(":)");
 			Calendar cal = Calendar.getInstance();
-			cal.set(2015, 12, 28);
+			/*cal.set(2015, 12, 28);
 			//System.out.println(cal.getTime().toString());
 			Date d1 = cal.getTime();
 			cal.set(2013, 12, 28);
@@ -22,7 +22,10 @@ public class Executar {
 			Date d3 = cal.getTime();
 			System.out.println("Resultats query 4");
 			System.out.println("-----------------------");
-			mongo.query4(d3, "Europa");
+			mongo.query4(d3, "Europa");*/
+
+			//mongo.query1("2015-10-14");
+			mongo.query2(21, "tipusabc", "Europa");
 			System.out.println("Fin");
 		}
 		catch(Exception ex){
